@@ -36,7 +36,7 @@ def dir_to_img(dir='test_images/easy.jpg'): #Used LLM
         return None
 
 
-def display_img(img):
+def display_img(img, title='Draw Scribbles (Press ESC when finished)'):
     '''
     Given a 3d matrix (a numpy matrix (3, height, width)) display the image
     '''
@@ -97,23 +97,33 @@ def display_img(img):
     
     return mask
 
-def User_interface(img):
+def User_interface(img, prompt=None):
     '''
     Given an image (3d numpy matrix (3, height, width)), must create a user interface which displays the image and
     allows a user to mark some pixels of it. This should return a binary matrix where
     a 1 represents a position which was marked and 0s everywhere else
     '''
 
-    return
+    title = prompt if prompt is not None else 'Draw Scribbles (Press ESC when finished)'
+    mask = display_img(img, title)
+    if mask is None:
+        return np.zeros((img.shape[1], img.shape[2]), dtype=np.uint8)
+    return mask.astype(np.uint8)
 
 def apply_masks(img, mask):
     '''
-    Docstring for apply_masks
-    
-    :param img: An image, a 3d numpy matrix containing the RGB values of each pixel of an image (3, height, width)
-    :param mask: A binary (only 0 or 1) 2d numpy matrix. The 1s represent pixels which should be kept, the others should be discarded (made black) 
+    Given an image (3, H, W) and a binary mask (H, W), applies the mask 
+    to isolate the foreground and background, returning them as (H, W, 3).
     '''
-
-    # TODO -- needed for your written report
-
-    return
+    # Convert the 2D mask (H, W) to a 3D mask (3, H, W) to match the image channels
+    mask_rgb = np.repeat(mask[np.newaxis, :, :], 3, axis=0)
+    
+    # Element-wise multiplication, explicitly casting back to uint8 to prevent OpenCV crashes
+    foreground = (img * mask_rgb).astype(np.uint8)
+    background = (img * (1 - mask_rgb)).astype(np.uint8)
+    
+    # Transpose back to (H, W, 3) for standard image rendering
+    foreground = np.transpose(foreground, (1, 2, 0))
+    background = np.transpose(background, (1, 2, 0))
+    
+    return foreground, background
